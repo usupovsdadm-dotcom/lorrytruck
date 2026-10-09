@@ -54,7 +54,7 @@ if(fine&&!RM){const g=$('.glow');let gx=0,gy=0,gr=0;addEventListener('pointermov
  $$('[data-tilt]').forEach(c=>{c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;c.style.transform=`perspective(700px) rotateX(${-y*6}deg) rotateY(${x*8}deg) translateY(-6px)`});c.addEventListener('pointerleave',()=>c.style.transform='')});
  $$('.btn-a').forEach(b=>{b.addEventListener('pointermove',e=>{const r=b.getBoundingClientRect();b.style.transform=`translate(${(e.clientX-r.left-r.width/2)*.15}px,${(e.clientY-r.top-r.height/2)*.25}px)`});b.addEventListener('pointerleave',()=>b.style.transform='')})}
 // ===== configurator =====
-let D=null,B=-1,Sy=-1,Q='',lim=40;const sel=new Map();const L=$('#list'),C=$('#cnt'),M=$('#more');
+const LIM=innerWidth<760?10:40;let D=null,B=-1,Sy=-1,Q='',lim=LIM;const sel=new Map();const L=$('#list'),C=$('#cnt'),M=$('#more');
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));const norm=s=>s.toLowerCase().replace(/ё/g,'е');
 const load=()=>{if(D||load.p)return load.p;return load.p=fetch('assets/data/prices.json').then(r=>r.json()).then(d=>{D=d;D.r.forEach(r=>r[5]=norm(r[2]));render()})};
 const cio=new IntersectionObserver(es=>{if(es[0].isIntersecting){load();cio.disconnect()}},{rootMargin:'600px'});cio.observe($('#calc'));
@@ -63,19 +63,20 @@ function render(){if(!D)return;const R=rows();C.textContent=`Найдено: ${f
  L.innerHTML=R.slice(0,lim).map(r=>{const id=r[4],on=sel.has(id);return `<label class="it${on?' on':''}"><input type="checkbox" data-id="${id}"${on?' checked':''}><span class="t">${esc(r[2])}<small>${D.b[r[0]]} · ${D.s[r[1]]}</small></span><span class="p">${r[3]?'от '+fmt(r[3])+' ₽':'после диагностики'}</span></label>`}).join('')||'<p class="cnt">Ничего не нашли. Попробуйте другое слово или «Все марки».</p>';
  M.hidden=R.length<=lim;M.textContent=`Показать ещё (${fmt(R.length-lim)})`}
 L.addEventListener('change',e=>{const i=e.target.closest('input');if(!i)return;const r=D.r.find(x=>x[4]===i.dataset.id);if(i.checked)sel.set(r[4],r);else sel.delete(r[4]);i.closest('.it').classList.toggle('on',i.checked);est()});
-M.addEventListener('click',()=>{lim+=40;render()});
-let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{Q=e.target.value;lim=40;load().then(render)},120)});
-const chip=(box,attr,set)=>$(box).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;$$('.chip',$(box)).forEach(x=>x.setAttribute('aria-pressed',x===b));set(+b.dataset[attr]);lim=40;load().then(render)});
+M.addEventListener('click',()=>{lim+=LIM;render()});
+let qt;$('#q').addEventListener('input',e=>{clearTimeout(qt);qt=setTimeout(()=>{Q=e.target.value;lim=LIM;load().then(render)},120)});
+const chip=(box,attr,set)=>$(box).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;$$('.chip',$(box)).forEach(x=>x.setAttribute('aria-pressed',x===b));set(+b.dataset[attr]);lim=LIM;load().then(render)});
 chip('#bchips','b',v=>B=v);chip('#schips','s',v=>Sy=v);
-$$('.sy[data-sys]').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.sys;Sy=v;$$('#schips .chip').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.s===v));lim=40;load().then(render);$('#calc').scrollIntoView({behavior:RM?'auto':'smooth'})}));
+$$('.sy[data-sys]').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.sys;Sy=v;$$('#schips .chip').forEach(x=>x.setAttribute('aria-pressed',+x.dataset.s===v));lim=LIM;load().then(render);$('#calc').scrollIntoView({behavior:RM?'auto':'smooth'})}));
 let cur=0;const sumEl=$('#sum');
 function anim(to){if(RM){sumEl.textContent=fmt(to)+' ₽';cur=to;return}const from=cur,t0=performance.now();cur=to;const step=t=>{const k=Math.min(1,(t-t0)/600),v=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));sumEl.textContent=(to?'от ':'')+fmt(v)+' ₽';if(k<1)requestAnimationFrame(step)};requestAnimationFrame(step)}
 function txt(){return [...sel.values()].map((r,i)=>`${i+1}. ${r[2]} — ${r[3]?'от '+fmt(r[3])+' ₽':'после диагностики'}`).join('\n')}
 function est(){const v=[...sel.values()];$('#sel').innerHTML=v.map(r=>`<li><span>${esc(r[2])}</span><span>${r[3]?fmt(r[3])+' ₽':'—'}</span><button type="button" data-x="${r[4]}" aria-label="Убрать: ${esc(r[2])}"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></li>`).join('');
- $('#empty').hidden=v.length>0;const s=v.reduce((a,r)=>a+r[3],0);anim(s);
+ $('#empty').hidden=v.length>0;const s=v.reduce((a,r)=>a+r[3],0);anim(s);const n=v.length;$('#ebn').textContent=n+' '+(n%10==1&&n%100!=11?'работа':n%10>=2&&n%10<=4&&(n%100<10||n%100>=20)?'работы':'работ');$('#ebs').textContent='от '+fmt(s)+' ₽';ebar();
  $('#sendmail').href=`mailto:${MAIL}?subject=${encodeURIComponent('Смета с сайта LorryTruck')}&body=${encodeURIComponent('Здравствуйте! Прошу рассчитать работы:\n'+txt()+`\nИтого ориентир: от ${fmt(s)} ₽\n\nМарка/модель:\nТелефон:`)}`}
 $('#sel').addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;sel.delete(b.dataset.x);est();render()});
 $('#copy').addEventListener('click',()=>{if(!sel.size){toast('Сначала отметьте работы');return}const t=txt()+`\nИтого: от ${fmt([...sel.values()].reduce((a,r)=>a+r[3],0))} ₽`;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Смета скопирована'),()=>toast('Не удалось скопировать'))});
 const hr=$('#hrs');const hu=()=>{const h=+hr.value;$('#hv').textContent=h+' ч';$('#hout').textContent=`${fmt(h*1250)} – ${fmt(h*3000)} ₽`};hr.addEventListener('input',hu);hu();
+let estIn=false;const eb=$('#estbar');function ebar(){eb.hidden=!(sel.size&&!estIn)}new IntersectionObserver(es=>{estIn=es[0].isIntersecting;ebar()}).observe($('#est'));eb.addEventListener('click',()=>$('#est').scrollIntoView({behavior:RM?'auto':'smooth',block:'center'}));
 est();requestAnimationFrame(onS);
 })();
