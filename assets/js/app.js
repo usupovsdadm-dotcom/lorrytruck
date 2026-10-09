@@ -18,8 +18,10 @@ const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.targ
 $$('.rv').forEach(e=>io.observe(e));
 // odometer stats
 const st=$('#stats');
-if(st&&!RM){$$('b[data-n]',st).forEach(b=>{const s=b.dataset.n;b.setAttribute('aria-label',s);b.innerHTML=[...s].map(c=>/\d/.test(c)?`<span class="col" aria-hidden="true" data-d="${c}">${'0123456789'.split('').map(x=>`<span>${x}</span>`).join('')}</span>`:`<span aria-hidden="true">${c}</span>`).join('')});
- new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){o.disconnect();$$('.col',st).forEach((c,i)=>{c.style.transitionDelay=(i%4)*.12+'s';c.style.transform=`translateY(-${c.dataset.d}em)`});setTimeout(()=>$$('b[data-n]',st).forEach(b=>b.textContent=b.dataset.n),2600)}},{threshold:.4}).observe(st)}
+if(st&&!RM){new IntersectionObserver((es,o)=>{if(!es[0].isIntersecting)return;o.disconnect();
+ $$('b[data-n]',st).forEach(b=>{const s=b.dataset.n;b.innerHTML=`<span class="sr">${s}</span>`+[...s].map(c=>/\d/.test(c)?`<span class="col" aria-hidden="true" data-d="${c}">${'0123456789'.split('').map(x=>`<span>${x}</span>`).join('')}</span>`:`<span aria-hidden="true">${c}</span>`).join('')});
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{$$('.col',st).forEach((c,i)=>{c.style.transitionDelay=(i%4)*.12+'s';c.style.transform=`translateY(-${c.dataset.d}em)`})}));
+ setTimeout(()=>$$('b[data-n]',st).forEach(b=>b.textContent=b.dataset.n),2800)},{threshold:.4}).observe(st)}
 // letter word reveal
 const sh=$('#sheet');if(sh){const ws=$$('.wd',sh);ws.forEach((w,i)=>w.style.transitionDelay=(RM?0:i*0.028)+'s');new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){sh.classList.add('in');o.disconnect()}},{threshold:.25}).observe(sh)}
 // process road
@@ -39,7 +41,7 @@ $('.x',lb).onclick=closeLb;$('.pv',lb).onclick=()=>show(gi-1);$('.nx',lb).onclic
 addEventListener('keydown',e=>{if(!lb.classList.contains('on'))return;if(e.key==='Escape')closeLb();if(e.key==='ArrowLeft')show(gi-1);if(e.key==='ArrowRight')show(gi+1)});
 // reviews
 const rt=$('#rtrack'),rb=$('#rbar');function revs(){}
-if(rt){const upd=()=>{const m=rt.scrollWidth-rt.clientWidth;rb.style.transform=`scaleX(${Math.max(.08,m>0?(rt.scrollLeft+rt.clientWidth)/rt.scrollWidth:1)})`};rt.addEventListener('scroll',()=>requestAnimationFrame(upd),{passive:true});upd();
+if(rt){const upd=()=>{const m=rt.scrollWidth-rt.clientWidth;rb.style.transform=`scaleX(${Math.max(.08,m>0?(rt.scrollLeft+rt.clientWidth)/rt.scrollWidth:1)})`};rt.addEventListener('scroll',()=>requestAnimationFrame(upd),{passive:true});new IntersectionObserver((es,o)=>{if(es[0].isIntersecting){o.disconnect();upd()}}).observe(rt);
  $$('[data-r]').forEach(b=>b.addEventListener('click',()=>{const c=$('.rc',rt);rt.scrollBy({left:+b.dataset.r*(c.offsetWidth+14),behavior:'smooth'})}))}
 // map
 const mb=$('#mapbtn');const loadMap=()=>{if($('#map iframe'))return;const f=document.createElement('iframe');f.src='https://yandex.ru/map-widget/v1/?ll=37.774387%2C55.444077&z=16&oid=51367159044&ol=biz';f.title='LorryTruck на Яндекс Картах';f.loading='lazy';f.allowFullscreen=true;$('#map').appendChild(f);$('#map .ph').remove()};
@@ -75,5 +77,5 @@ function est(){const v=[...sel.values()];$('#sel').innerHTML=v.map(r=>`<li><span
 $('#sel').addEventListener('click',e=>{const b=e.target.closest('[data-x]');if(!b)return;sel.delete(b.dataset.x);est();render()});
 $('#copy').addEventListener('click',()=>{if(!sel.size){toast('Сначала отметьте работы');return}const t=txt()+`\nИтого: от ${fmt([...sel.values()].reduce((a,r)=>a+r[3],0))} ₽`;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Смета скопирована'),()=>toast('Не удалось скопировать'))});
 const hr=$('#hrs');const hu=()=>{const h=+hr.value;$('#hv').textContent=h+' ч';$('#hout').textContent=`${fmt(h*1250)} – ${fmt(h*3000)} ₽`};hr.addEventListener('input',hu);hu();
-est();onS();
+est();requestAnimationFrame(onS);
 })();
